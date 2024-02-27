@@ -7,6 +7,9 @@ db.sqlite3
 media
 static
 
+# Mac
+.DS_Store
+
 # Backup files # 
 *.bak 
 
