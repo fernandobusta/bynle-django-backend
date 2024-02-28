@@ -28,7 +28,7 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 # ALLOWED_HOSTS = ['localhost:3000','www.bynle.com', 'bynlec.com', 'localhost:8000']
-ALLOWED_HOSTS = ['https://www.bynle.com', 'www.bynle.com', '127.0.0.1', 'bynle.com', 'bynle-production.up.railway.app', 'https://bynle-production.up.railway.app/', 'https://main.dofgh8tfv03rn.amplifyapp.com']
+ALLOWED_HOSTS = ['https://www.bynle.com', 'www.bynle.com', '127.0.0.1', 'bynle.com', 'bynle-production.up.railway.app', 'https://bynle-production.up.railway.app/', 'https://main.d3f452nujfpeih.amplifyapp.com']
 
 # Application definition
 
@@ -179,12 +179,12 @@ STRIPE_PUBLIC_KEY = config('STRIPE_PUBLIC_KEY')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY')
 
 # Not both of them are needed
-CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://bynle.com', 'https://www.bynle.com', 'http://bynle-production.up.railway.app', 'https://bynle-production.up.railway.app', 'https://main.dofgh8tfv03rn.amplifyapp.com']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'http://bynle.com', 'https://www.bynle.com', 'http://bynle-production.up.railway.app', 'https://bynle-production.up.railway.app', 'https://main.d3f452nujfpeih.amplifyapp.com']
 CORS_ALLOWED_ORIGINS=[
     'http://localhost:3000',
     'http://bynle.com',
     'https://www.bynle.com',
-    'https://main.dofgh8tfv03rn.amplifyapp.com',
+    'https://main.d3f452nujfpeih.amplifyapp.com',
 ]
 
 SIMPLE_JWT = {
