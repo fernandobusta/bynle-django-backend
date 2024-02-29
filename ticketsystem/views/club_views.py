@@ -7,7 +7,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import Club, User, Follow
-from ..serializers.serializers import ClubSerializer, UserFriendSerializer, ClubUpdateSerializer, FollowSerializer
+from ..serializers.serializers import ClubSerializer, ClubUpdateSerializer, FollowSerializer
+from ..serializers.user_serializers import UserFriendSerializer
 
 # ====================================================================================================
 # Club, Follows and Club Admin API
