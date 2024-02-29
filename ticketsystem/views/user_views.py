@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import User, Profile
-from ..serializers.serializers import UserSerializer, ProfileSerializer, UserNameSerializer, UserFriendSerializer
+from ..serializers.user_serializers import UserSerializer, ProfileSerializer, UserNameSerializer, UserFriendSerializer, ProfileUpdateSerializer
 
 # ====================================================================================================
 # User and Profile API
@@ -19,6 +19,12 @@ class ProfileViewSet(viewsets.ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        serializer = ProfileUpdateSerializer(data=request.data, instance=self.get_object(), partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
 
 class UserNameView(APIView):
     permission_classes = [IsAuthenticated]

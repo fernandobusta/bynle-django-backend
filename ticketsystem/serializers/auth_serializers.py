@@ -31,7 +31,6 @@ class UserTokenObtainPairSerializer(GeneralTokenObtainPairSerializer):
 
         profile_picture = user.profile.profile_picture if user.profile and user.profile.profile_picture else None
         token['profile_picture'] = profile_picture.url if profile_picture else settings.MEDIA_URL + 'default_profile_picture.jpg'
-
         token['birthday'] = str(user.profile.birthday)
         token['course'] = user.profile.course
         token['year'] = user.profile.year

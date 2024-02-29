@@ -1,7 +1,7 @@
 from ..models import *
 from rest_framework import serializers
 from django.utils.timezone import localdate
-from .serializers import UserSerializer
+from .user_serializers import UserSerializer
 
 class TicketScannerCreateSerializer(serializers.ModelSerializer):
     event_id = serializers.IntegerField(write_only=True)

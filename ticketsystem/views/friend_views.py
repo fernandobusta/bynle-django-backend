@@ -8,7 +8,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import Friend, User
-from ..serializers.serializers import FriendSerializer, UserFriendSerializer
+from ..serializers.serializers import FriendSerializer
+from ..serializers.user_serializers import UserFriendSerializer
 
 # ====================================================================================================
 # Friends API
