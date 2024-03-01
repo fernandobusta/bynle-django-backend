@@ -1,7 +1,9 @@
 from rest_framework import serializers
-from ..models import User, Profile
+from ..models import User, Profile, Friend
 from django.conf import settings
 from datetime import datetime, timedelta, date
+from django.db.models import Q
+
 
 class UserSerializer(serializers.ModelSerializer):
     """ Serializer for the User model """
@@ -101,3 +103,84 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
             data.pop('description')
 
         return data
+
+class ProfilePageSerializer(serializers.ModelSerializer):
+    """ Serializer for the User model with the profile picture and fields """
+    profile_picture = serializers.SerializerMethodField()
+    course = serializers.SerializerMethodField()
+    year = serializers.SerializerMethodField()
+    description = serializers.SerializerMethodField()
+    verified = serializers.SerializerMethodField()
+    friendship_status = serializers.SerializerMethodField()
+    first_name = serializers.SerializerMethodField()
+    last_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('username', 'first_name', 'last_name', 'profile_picture', 'course', 'year', 'description', 'verified', 'friendship_status')
+
+    def get_friendship_status(self, obj):
+        # Check if the friendship status is already in the context
+        if 'friendship_status' in self.context:
+            return self.context['friendship_status']
+
+        request = self.context.get('request')
+        if request.user == obj:
+            status = 'you'
+        elif obj.account_type == User.CLOSED:
+            status = 'closed'
+        else:
+            friend_requests = Friend.objects.filter(
+                Q(sender=request.user, receiver=obj) | 
+                Q(sender=obj, receiver=request.user)
+            )
+            if friend_requests.filter(status=True).exists():
+                status = 'friends'
+            elif friend_requests.filter(status=False).exists():
+                if friend_requests.first().sender == request.user:
+                    status = 'pending'
+                else:
+                    status = 'accept'
+            else:
+                status = 'none'
+
+        self.context['friendship_status'] = status
+        return status
+
+    def get_field_value(self, obj, field):
+        request = self.context.get('request')
+        if request.user == obj:
+            return getattr(obj.profile, field)
+        friendship_status = self.get_friendship_status(obj)
+        if obj.account_type == User.CLOSED or (obj.account_type == User.PRIVATE and friendship_status == 'none'):
+            return None
+        return getattr(obj.profile, field)
+
+    def get_first_name(self, obj):
+        if obj.account_type == User.CLOSED:
+            return 'Restricted'
+        return obj.first_name
+
+    def get_last_name(self, obj):
+        if obj.account_type == User.CLOSED:
+            return 'Account'
+        return obj.last_name
+
+    def get_profile_picture(self, obj):
+        profile_picture = self.get_field_value(obj, 'profile_picture')
+        if profile_picture:
+            request = self.context.get('request')
+            return request.build_absolute_uri(profile_picture.url)
+        return None
+
+    def get_course(self, obj):
+        return self.get_field_value(obj, 'course')
+
+    def get_year(self, obj):
+        return self.get_field_value(obj, 'year')
+
+    def get_description(self, obj):
+        return self.get_field_value(obj, 'description')
+
+    def get_verified(self, obj):
+        return self.get_field_value(obj, 'verified')

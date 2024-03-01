@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db.models.signals import post_save
 from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.db.models import Q
 
 from backend.storage_backends import PrivateMediaStorage
 
@@ -18,10 +19,30 @@ class User(AbstractUser):
         ('user', 'user'),
         ('ticket_scanner', 'ticket_scanner'),
     )
-
     user_type = models.CharField(max_length=20, choices=USER_TYPE_CHOICES, default='user')
+    PUBLIC = 'PUB'
+    PRIVATE = 'PRI'
+    CLOSED = 'CLO'
+    ACCOUNT_TYPES = [
+        (PUBLIC, 'Public'),
+        (PRIVATE, 'Private'),
+        (CLOSED, 'Closed'),
+    ]
+    account_type = models.CharField(
+        max_length=3,
+        choices=ACCOUNT_TYPES,
+        default=PUBLIC,
+    )
     event = models.ForeignKey('Event', on_delete=models.SET_NULL, null=True, blank=True, default=None)
     created_by = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, default=None)
+
+    def is_friends_with(self, user):
+        status_friends = Friend.objects.filter(
+            Q(sender=self, receiver=user) | Q(sender=user, receiver=self),
+            status=True
+        ).exists()
+        print("The status: ", status_friends)
+        return status_friends
 
     def __str__(self):
         return self.username
@@ -39,11 +60,14 @@ class Profile(models.Model):
     verified = models.BooleanField(default=False)
 
 def create_user_profile(sender, instance, created, **kwargs):
-    if created:
+    """ Create a user profile when a new user is created. Only for users. """
+    if created and instance.user_type == 'user':
         Profile.objects.create(user=instance)
 
 def save_user_profile(sender, instance, **kwargs):
-    instance.profile.save()
+    """ Save the user profile when the user is saved. Only for users. """
+    if hasattr(instance, 'profile'):
+        instance.profile.save()
 
 post_save.connect(create_user_profile, sender=User)
 post_save.connect(save_user_profile, sender=User)

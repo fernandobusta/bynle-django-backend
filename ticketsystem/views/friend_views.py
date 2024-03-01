@@ -107,6 +107,7 @@ class CreateFriendRequest(APIView):
 class ManageFriendship(APIView):
     permission_classes = [IsAuthenticated]
 
+    # This isnot used in the frontend
     def get(self, request, user1, username2, format=None):
         """ Return if the friendship status between the two users, if it exists 
             user1 is the authenticated user, user2 is the user that we want to check the friendship status with 

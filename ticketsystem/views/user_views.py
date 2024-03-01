@@ -3,8 +3,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
-from ..models import User, Profile
-from ..serializers.user_serializers import UserSerializer, ProfileSerializer, UserNameSerializer, UserFriendSerializer, ProfileUpdateSerializer
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
+
+from ..models import User, Profile, Friend
+from ..serializers.user_serializers import UserSerializer, ProfileSerializer, UserNameSerializer, ProfilePageSerializer, ProfileUpdateSerializer
 
 # ====================================================================================================
 # User and Profile API
@@ -52,11 +55,10 @@ class UserPublicProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username, format=None):
-        """ Return a user's public profile. This profile is visible to all users """
-        # These are the values that we want to send: username, first_name, profile_picture, description, course, year, verified
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            return Response({'detail': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-        serializer = UserFriendSerializer(user)
+        """ Return a user's public profile depending on the account type and friendship status
+         - Public: Everyone can view the profile (Sending friendship as well)
+         - Private: Only friends can view the profile (Sending friendship as well)
+         - Closed: No one can view the profile """
+        user = get_object_or_404(User.objects.select_related('profile'), username=username)
+        serializer = ProfilePageSerializer(user, context={'request': request})
         return Response(serializer.data)
