@@ -7,8 +7,8 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import Club, User, Follow
-from ..serializers.serializers import ClubSerializer, ClubUpdateSerializer, FollowSerializer
-from ..serializers.user_serializers import UserFriendSerializer
+from ..serializers.user_serializers import BasicUserInfoSerializer
+from ..serializers.club_serializers import ClubSerializer, ClubUpdateSerializer, FollowSerializer, ClubsFollowedSerializer
 
 # ====================================================================================================
 # Club, Follows and Club Admin API
@@ -85,13 +85,15 @@ class ClubsAdminedByUserView(APIView):
         return Response(serializer.data)
 
 class AdminsInClubView(APIView):
+    """ Optimised: True """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, club_id, format=None):
         """ Return a list of users that admin the club """
         club = get_object_or_404(Club, id=club_id)
-        users = club.club_admins.all()
-        serializer = UserFriendSerializer(users, many=True)
+        # prefetch_related('profile') is used to avoid the N+1 problem
+        users = club.club_admins.only('username', 'first_name', 'last_name', 'profile__course', 'profile__year', 'profile__verified').select_related('profile')
+        serializer = BasicUserInfoSerializer(users, many=True, context={'request': request})
         return Response(serializer.data)
 
 class RemoveClubAdminView(APIView):
@@ -179,9 +181,10 @@ class UserFollowsView(APIView):
 
     def get(self, request, user_id, format=None):
         """ Return a list of clubs that the user follows """
-        follows = Follow.objects.filter(user_id=user_id)
-        clubs = Club.objects.filter(id__in=[follow.club_id for follow in follows])
-        serializer = ClubSerializer(clubs, many=True)
+        if request.user.id != user_id:
+            return Response({"detail": "Not authorized"}, status=403)
+        clubs = Club.objects.filter(follow__user_id=user_id)
+        serializer = ClubsFollowedSerializer(clubs, many=True, context={'request': request})
         return Response(serializer.data)
 
 class CommonClubsView(APIView):
@@ -197,6 +200,5 @@ class CommonClubsView(APIView):
 
         # Extract the club from each follow
         common_clubs = set(follow.club for follow in common_clubs)
-
-        serializer = ClubSerializer(common_clubs, many=True)
+        serializer = ClubSerializer(common_clubs, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)

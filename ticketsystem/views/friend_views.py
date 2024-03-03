@@ -8,8 +8,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 
 from ..models import Friend, User
-from ..serializers.serializers import FriendSerializer
-from ..serializers.user_serializers import UserFriendSerializer
+from ..serializers.friend_serializers import *
 
 # ====================================================================================================
 # Friends API
@@ -38,25 +37,31 @@ class UserFriends(APIView):
         users = User.objects.filter(id__in=friend_ids)
         
         # Use the new serializer here
-        serializer = UserFriendSerializer(users, many=True)
+        serializer = FriendStatusSerializer(users, many=True, context={'request': request})
         return Response(serializer.data)
 
 class CommonFriendsView(APIView):
+    """ Optimised: True """
     permission_classes = [IsAuthenticated]
     def get(self, request, user_id1, username2, format=None):
         """ Return a list of common friends between two users """
         user1 = get_object_or_404(User, id=user_id1)
         user2 = get_object_or_404(User, username=username2)
 
-        # Get friends of user1
-        user1_friends = Friend.objects.filter(Q(sender=user1) | Q(receiver=user1), status=True)
-        # Get friends of user2 that are also friends of user1
-        common_friends = Friend.objects.filter(Q(sender=user2) | Q(receiver=user2), status=True, id__in=user1_friends)
+        user1_friend_ids = list(Friend.objects.filter(Q(sender=user1), status=True).values_list('receiver_id', flat=True)) + \
+                        list(Friend.objects.filter(Q(receiver=user1), status=True).values_list('sender_id', flat=True))
+        user2_friend_ids = list(Friend.objects.filter(Q(sender=user2), status=True).values_list('receiver_id', flat=True)) + \
+                        list(Friend.objects.filter(Q(receiver=user2), status=True).values_list('sender_id', flat=True))
 
-        # Extract the friend from each friendship
-        common_friends = set(friend.receiver if friend.sender == user2 else friend.sender for friend in common_friends)
+        common_friend_ids = set(user1_friend_ids).intersection(user2_friend_ids)
 
-        serializer = UserFriendSerializer(common_friends, many=True)
+        common_friend_ids.discard(request.user.id)
+        common_friend_ids.discard(user2.id)
+
+        # Prefetch the Profile objects
+        common_friends = User.objects.filter(id__in=common_friend_ids).select_related('profile')
+
+        serializer = CommonFriendsSerializer(common_friends, many=True, context={'request': request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class CreateFriendRequest(APIView):

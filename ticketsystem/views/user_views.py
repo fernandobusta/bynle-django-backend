@@ -19,6 +19,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
 class ProfileViewSet(viewsets.ModelViewSet):
+    """ ProfileViewSet, Used in personal profile page """
     queryset = Profile.objects.all()
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
@@ -42,20 +43,12 @@ class UserNameView(APIView):
         serializer = UserNameSerializer(users, many=True)
         return Response(serializer.data)
 
-class UserPersonalProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request, user_id, format=None):
-        """ Return the user's personal profile """
-        profile = Profile.objects.get(user=user_id)
-        serializer = ProfileSerializer(profile)
-        return Response(serializer.data)
-
 class UserPublicProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, username, format=None):
-        """ Return a user's public profile depending on the account type and friendship status
+        """ Optimised: True
+        Return a user's public profile depending on the account type and friendship status
          - Public: Everyone can view the profile (Sending friendship as well)
          - Private: Only friends can view the profile (Sending friendship as well)
          - Closed: No one can view the profile """

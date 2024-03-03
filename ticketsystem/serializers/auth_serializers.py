@@ -1,6 +1,6 @@
 from ..models import *
 from rest_framework import serializers, exceptions
-from django.conf import settings
+from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.timezone import localdate
@@ -21,6 +21,8 @@ class GeneralTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 # Token serializer for regular users
 class UserTokenObtainPairSerializer(GeneralTokenObtainPairSerializer):
+    """ Optimised: True 
+        Sending profile picture of users and username"""
     def get_token(self, user):
         if user.user_type != 'user':
             raise exceptions.ValidationError("Only regular users can obtain a token through this method.")
@@ -30,7 +32,11 @@ class UserTokenObtainPairSerializer(GeneralTokenObtainPairSerializer):
         token['last_name'] = user.last_name
 
         profile_picture = user.profile.profile_picture if user.profile and user.profile.profile_picture else None
-        token['profile_picture'] = profile_picture.url if profile_picture else settings.MEDIA_URL + 'default_profile_picture.jpg'
+        if profile_picture:
+            token['profile_picture'] = self.context['request'].build_absolute_uri(profile_picture.url)
+        else:
+            token['profile_picture'] = None
+
         token['birthday'] = str(user.profile.birthday)
         token['course'] = user.profile.course
         token['year'] = user.profile.year

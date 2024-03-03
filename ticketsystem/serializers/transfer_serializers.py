@@ -31,11 +31,27 @@ class TransferRequestSerializer(serializers.ModelSerializer):
         return obj.created_at.strftime('%d/%m/%Y')
 
     def get_sender_profile_picture(self, obj):
-        return obj.sender.profile.profile_picture.url if obj.sender.profile.profile_picture else settings.MEDIA_URL + 'default_profile_picture.jpg'
+        """ Return the sender's profile picture if it exists, otherwise return None """
+        profile_picture = obj.sender.profile.profile_picture
+        if profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(profile_picture.url)
+            return profile_picture.url
+        return None
+
     def get_club_name(self, obj):
         return obj.ticket.event.club.name
+
     def get_event_cover(self, obj):
-        return obj.ticket.event.event_cover.url if obj.ticket.event.event_cover else settings.MEDIA_URL + 'default_event_cover.jpg'
+        """ Return the event cover if it exists, otherwise return None """
+        event_cover = obj.ticket.event.event_cover
+        if event_cover:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(event_cover.url)
+            return event_cover.url
+        return None
 
 class CreateTransferRequestSerializer(serializers.Serializer):
     receiver = serializers.CharField()

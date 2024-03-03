@@ -4,7 +4,6 @@ from django.conf import settings
 from datetime import datetime, timedelta, date
 from django.db.models import Q
 
-
 class UserSerializer(serializers.ModelSerializer):
     """ Serializer for the User model """
     class Meta:
@@ -12,19 +11,22 @@ class UserSerializer(serializers.ModelSerializer):
         fields = ('username', 'email', 'student_id', 'first_name', 'last_name')
 
 class ProfileSerializer(serializers.ModelSerializer):
-    """ Serializer for the Profile model - Default profile picture is used 
-    if the user has not uploaded a profile picture """
+    """ Serializer for the Profile model """
     profile_picture = serializers.SerializerMethodField()
 
     class Meta:
         model = Profile
-        fields = ('__all__')
-    
+        fields = '__all__'
+
     def get_profile_picture(self, obj):
-        if obj.profile_picture:
-            return obj.profile_picture.url
-        else:
-            return settings.MEDIA_URL + 'default_profile_picture.jpg'
+        """ Return the profile picture if it exists, otherwise return None """
+        profile_picture = obj.profile_picture
+        if profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(profile_picture.url)
+            return profile_picture.url
+        return None
 
 class UserNameSerializer(serializers.ModelSerializer):
     """ Serializer for the User model with only the username """
@@ -32,23 +34,29 @@ class UserNameSerializer(serializers.ModelSerializer):
         model = User
         fields = ('username', 'first_name', 'last_name')
 
-class UserFriendSerializer(serializers.ModelSerializer):
+class BasicUserInfoSerializer(serializers.ModelSerializer):
     """ Serializer for the User model with the profile picture and fields """
     profile_picture = serializers.SerializerMethodField()
     course = serializers.CharField(source='profile.course')
     year = serializers.IntegerField(source='profile.year')
     verified = serializers.BooleanField(source='profile.verified')
-    description = serializers.CharField(source='profile.description')
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'profile_picture', 'course', 'year', 'verified', 'description')
+        fields = ('username', 'first_name', 'last_name', 'profile_picture', 'course', 'year', 'verified')
 
     def get_profile_picture(self, obj):
-        profile_picture = obj.profile.profile_picture if obj.profile and obj.profile.profile_picture else None
-        return profile_picture.url if profile_picture else settings.MEDIA_URL + 'default_profile_picture.jpg' 
+        """ Return the profile picture if it exists, otherwise return None """
+        profile_picture = obj.profile.profile_picture
+        if profile_picture:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(profile_picture.url)
+            return profile_picture.url
+        return None
 
 def validate_file_size(value):
+    """ Validate the file size of the profile picture """
     filesize = value.size
     if filesize > 1048576:
         raise serializers.ValidationError("The maximum file size that can be uploaded is 1MB")
@@ -56,6 +64,8 @@ def validate_file_size(value):
         return value
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
+    """ Optimised: True
+        Serializer to update the profile of the user """
     profile_picture = serializers.ImageField(validators=[validate_file_size], required=False)
 
     class Meta:
@@ -105,7 +115,8 @@ class ProfileUpdateSerializer(serializers.ModelSerializer):
         return data
 
 class ProfilePageSerializer(serializers.ModelSerializer):
-    """ Serializer for the User model with the profile picture and fields """
+    """ Optimised: True
+        Serializer for the User model with the profile picture and fields """
     profile_picture = serializers.SerializerMethodField()
     course = serializers.SerializerMethodField()
     year = serializers.SerializerMethodField()
