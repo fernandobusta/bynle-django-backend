@@ -89,9 +89,10 @@ class UserSentTransferRequestsView(APIView):
         declined_transfer_requests = sent_transfer_requests.filter(status='declined')
 
         # Serialize the transfer requests
-        pending_serializer = TransferRequestSerializer(pending_transfer_requests, many=True)
-        accepted_serializer = TransferRequestSerializer(accepted_transfer_requests, many=True)
-        declined_serializer = TransferRequestSerializer(declined_transfer_requests, many=True)
+        context = {'request': request}
+        pending_serializer = TransferRequestSerializer(pending_transfer_requests, many=True, context=context)
+        accepted_serializer = TransferRequestSerializer(accepted_transfer_requests, many=True, context=context)
+        declined_serializer = TransferRequestSerializer(declined_transfer_requests, many=True, context=context)
 
         return Response({
             'pending_transfer_requests': pending_serializer.data,
@@ -104,7 +105,7 @@ class UserTransferRequestView(APIView):
     def get(self, request, user_id, format=None):
         """ Return a list of the transfer requests that the user has received """
         transfer_requests = TransferRequest.objects.filter(receiver_id=user_id)
-        serializer = TransferRequestSerializer(transfer_requests, many=True)
+        serializer = TransferRequestSerializer(transfer_requests, many=True, context={'request': request})
         return Response(serializer.data,  status=status.HTTP_200_OK)
 
 class UserReceivedTransferRequestView(APIView):

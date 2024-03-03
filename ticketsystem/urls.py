@@ -35,7 +35,6 @@ urlpatterns = [
 
     # Users and Profiles
     path('usernames/', UserNameView.as_view(), name='public-usernames'),
-    path('user/<int:user_id>/profile/', UserPersonalProfileView.as_view(), name='user-profile'), # Is this used?
     path('user/<str:username>/public-profile/', UserPublicProfileView.as_view(), name='public-users'),
 
     # Ticket Scanners

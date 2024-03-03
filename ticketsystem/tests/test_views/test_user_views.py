@@ -67,21 +67,6 @@ class UserNameViewTest(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]['username'], 'testuser')
 
-class UserPersonalProfileViewTest(TestCase):
-    """ Testing: UserPersonalProfileView
-        Dependencies: User, Profile
-        Url Name: user-profile """
-    def setUp(self):
-        self.client = APIClient()
-        self.user = User.objects.create_user(username='testuser', email='testuser@example.com', password='testpass', user_type='user')
-        self.profile = Profile.objects.get(user=self.user)
-        self.client.force_authenticate(user=self.user)
-
-    def test_retrieve_personal_profile(self):
-        response = self.client.get(reverse('user-profile', kwargs={'user_id': self.user.id}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['user'], self.user.id)
-
 class UserPublicProfileViewTest(TestCase):
     """ Testing: UserPublicProfileView
         Dependencies: User, Profile
@@ -99,4 +84,4 @@ class UserPublicProfileViewTest(TestCase):
 
     def test_retrieve_nonexistent_public_profile(self):
         response = self.client.get(reverse('public-users', kwargs={'username': 'nonexistentuser'}))
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
