@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
 from django.db.models import Q
@@ -17,6 +18,25 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
+
+    @action(detail=True, methods=['get'])
+    def account_type(self, request, pk=None):
+        user = self.get_object()
+        return Response({'account_type': user.account_type})
+
+    @action(detail=True, methods=['patch'])
+    def change_account_type(self, request, pk=None):
+        print(request.data)
+        user = self.get_object()
+        # Check if the user from the request is the same as the user from the URL
+        if request.user != user:
+            return Response({'detail': 'You do not have permission to change this user\'s account type'}, status=status.HTTP_403_FORBIDDEN)
+        new_account_type = request.data.get('account_type')
+        if new_account_type not in [User.PUBLIC, User.PRIVATE, User.CLOSED]:
+            return Response({'detail': 'Invalid account type'}, status=status.HTTP_400_BAD_REQUEST)
+        user.account_type = new_account_type
+        user.save()
+        return Response({'account_type': user.account_type}, status=status.HTTP_200_OK)
 
 class ProfileViewSet(viewsets.ModelViewSet):
     """ ProfileViewSet, Used in personal profile page """
