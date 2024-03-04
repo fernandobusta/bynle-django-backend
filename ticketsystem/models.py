@@ -49,7 +49,7 @@ class User(AbstractUser):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, primary_key=True, on_delete=models.CASCADE)
     profile_picture = models.ImageField(upload_to='profile_picture/', blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
     course = models.CharField(max_length=100, default="none")
@@ -58,20 +58,6 @@ class Profile(models.Model):
     stripe = models.OneToOneField('StripeAccount', blank=True, null=True, on_delete=models.CASCADE)
 
     verified = models.BooleanField(default=False)
-
-def create_user_profile(sender, instance, created, **kwargs):
-    """ Create a user profile when a new user is created. Only for users. """
-    if created and instance.user_type == 'user':
-        Profile.objects.create(user=instance)
-
-def save_user_profile(sender, instance, **kwargs):
-    """ Save the user profile when the user is saved. Only for users. """
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
-
-post_save.connect(create_user_profile, sender=User)
-post_save.connect(save_user_profile, sender=User)
-
 
 class TransferRequest(models.Model):
     id =  models.AutoField(primary_key=True)

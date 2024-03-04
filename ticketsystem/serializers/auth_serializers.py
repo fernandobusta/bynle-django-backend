@@ -4,6 +4,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.auth.password_validation import validate_password
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.timezone import localdate
+from datetime import date, datetime
 
 # ====================================================================================================
 #  Authentication Serializers 
@@ -57,12 +58,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'username', 'student_id', 'first_name', 'last_name', 'password', 'password2', 'profile', 'account_type')
+        fields = ('email', 'username', 'first_name', 'last_name', 'password', 'password2', 'profile', 'account_type')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError(
                 {"password": "Password fields didn't match."})
+        
+        # Validate the ProfileCreationSerializer
+        profile_serializer = ProfileCreationSerializer(data=attrs['profile'])
+        profile_serializer.is_valid(raise_exception=True)
 
         return attrs
 
@@ -71,7 +76,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         user = User.objects.create(
             username=validated_data['username'],
             email=validated_data['email'],
-            student_id=validated_data['student_id'],
             first_name=validated_data['first_name'],
             last_name=validated_data['last_name'],
             account_type=validated_data['account_type'],
@@ -80,11 +84,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
 
-        # Update the profile
-        profile = Profile.objects.get(user=user)
-        for attr, value in profile_data.items():
-            setattr(profile, attr, value)
-        profile.save()
+        # Create the profile
+        Profile.objects.create(user=user, **profile_data)
 
         return user
 
