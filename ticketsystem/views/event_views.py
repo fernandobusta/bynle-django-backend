@@ -4,19 +4,55 @@ from rest_framework import viewsets, status
 from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 
-from ..models import Event, User, Ticket
+from ..models import Event, User, Follow
 from ..serializers.event_serializers import EventSerializer
+from rest_framework.pagination import PageNumberPagination
 
-# ====================================================================================================
-# Events API
-# ====================================================================================================
+class EventPagination(PageNumberPagination):
+    """ Pagination for events """
+    page_size = 6
+
 class EventViewSet(viewsets.ModelViewSet):
     queryset = Event.objects.all()
     model = Event
     serializer_class = EventSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = EventPagination
+
+    def get_queryset(self):
+        """ Return events sorted by date """
+        return Event.objects.order_by('-date')
+
+    @action(detail=False, methods=['get'])
+    def paginated(self, request):
+        """ Return paginated events sorted by date """
+        events = self.get_queryset()
+        page = self.paginate_queryset(events)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def followed_clubs(self, request):
+        """ Return events for clubs that the user follows. Paginated and ordered by date """
+        followed_clubs = Follow.objects.filter(user=request.user).values_list('club', flat=True)
+        events = Event.objects.filter(club__in=followed_clubs).order_by('-date')
+
+        page = self.paginate_queryset(events)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(events, many=True)
+        return Response(serializer.data)
+
+
 
 class ClubEventsView(APIView):
     """ Optimised: True
