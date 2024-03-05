@@ -180,7 +180,7 @@ class ProfilePageSerializer(serializers.ModelSerializer):
 
     def get_profile_picture(self, obj):
         profile_picture = obj.profile.profile_picture
-        if profile_picture:
+        if profile_picture and obj.account_type != User.CLOSED:
             request = self.context.get('request')
             return request.build_absolute_uri(profile_picture.url)
         return None
@@ -204,7 +204,7 @@ class ProfilePageSerializer(serializers.ModelSerializer):
     def get_show_details(self, obj):
         """ Can the user see the details of the profile? """
         # If the account is public, return True
-        if obj.account_type == User.PUBLIC:
+        if obj.account_type == User.PUBLIC or obj == self.context['request'].user:
             return True
         # If the account is private, check if the user is friends with the profile
         elif obj.account_type == User.PRIVATE:
