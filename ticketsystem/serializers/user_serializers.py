@@ -125,10 +125,11 @@ class ProfilePageSerializer(serializers.ModelSerializer):
     friendship_status = serializers.SerializerMethodField()
     first_name = serializers.SerializerMethodField()
     last_name = serializers.SerializerMethodField()
+    show_details = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ('username', 'first_name', 'last_name', 'profile_picture', 'course', 'year', 'description', 'verified', 'friendship_status')
+        fields = ('username', 'first_name', 'last_name', 'profile_picture', 'course', 'year', 'description', 'verified', 'friendship_status', 'show_details')
 
     def get_friendship_status(self, obj):
         # Check if the friendship status is already in the context
@@ -163,7 +164,7 @@ class ProfilePageSerializer(serializers.ModelSerializer):
         if request.user == obj:
             return getattr(obj.profile, field)
         friendship_status = self.get_friendship_status(obj)
-        if obj.account_type == User.CLOSED or (obj.account_type == User.PRIVATE and friendship_status == 'none'):
+        if obj.account_type == User.CLOSED or (obj.account_type == User.PRIVATE and (friendship_status == 'none' or friendship_status == 'pending' or friendship_status == 'accept')):
             return None
         return getattr(obj.profile, field)
 
@@ -178,7 +179,7 @@ class ProfilePageSerializer(serializers.ModelSerializer):
         return obj.last_name
 
     def get_profile_picture(self, obj):
-        profile_picture = self.get_field_value(obj, 'profile_picture')
+        profile_picture = obj.profile.profile_picture
         if profile_picture:
             request = self.context.get('request')
             return request.build_absolute_uri(profile_picture.url)
@@ -191,7 +192,22 @@ class ProfilePageSerializer(serializers.ModelSerializer):
         return self.get_field_value(obj, 'year')
 
     def get_description(self, obj):
-        return self.get_field_value(obj, 'description')
+        if obj.account_type == User.CLOSED:
+            return None
+        return obj.profile.description
 
     def get_verified(self, obj):
-        return self.get_field_value(obj, 'verified')
+        if obj.account_type == User.CLOSED:
+            return None
+        return obj.profile.verified
+    
+    def get_show_details(self, obj):
+        """ Can the user see the details of the profile? """
+        # If the account is public, return True
+        if obj.account_type == User.PUBLIC:
+            return True
+        # If the account is private, check if the user is friends with the profile
+        elif obj.account_type == User.PRIVATE:
+            return obj.is_friends_with(self.context['request'].user)
+        else:
+            return False
