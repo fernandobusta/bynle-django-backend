@@ -109,7 +109,7 @@ def account_create_link(account_id, club_id):
         account_link_response = stripe.AccountLink.create(
             account=account_id,
             refresh_url=config('FRONTEND_URL'),
-            return_url=config('FRONTEND_URL') + "/stripe-successful/" + str(club_id),
+            return_url=config('FRONTEND_URL') + "/clubs/" + str(club_id) + "/admins/stripe-successful",
             type="account_onboarding",
             collection_options={"fields": "eventually_due"},
         )
@@ -119,7 +119,7 @@ def account_create_link_user(account_id, user_id):
         account_link_response = stripe.AccountLink.create(
             account=account_id,
             refresh_url=config('FRONTEND_URL'),
-            return_url=config('FRONTEND_URL') + "/stripe-successful/user/" + str(user_id),
+            return_url=config('FRONTEND_URL') + "/tickets/stripe-success-user/" + str(user_id),
             type="account_onboarding",
             collection_options={"fields": "eventually_due"},
         )
